@@ -1,0 +1,6 @@
+{
+  "extension": ["js", "cjs", "mjs", "ts"],
+  "spec": "./**/*.spec.mjs",
+  "timeout": 5000,
+  "node-option": ["experimental-specifier-resolution=node"]
+}
