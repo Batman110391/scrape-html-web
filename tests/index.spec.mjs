@@ -3,7 +3,7 @@ import { assert } from "chai";
 
 import { scrapeHtmlWeb } from "../lib/esm/index.mjs";
 
-describe("scrapeHtmlWeb Function", () => {
+describe("scrapeHtmlWeb Function MJS", () => {
   it("should be a function", () => {
     assert.isFunction(scrapeHtmlWeb);
   });
@@ -11,7 +11,6 @@ describe("scrapeHtmlWeb Function", () => {
   it("should return valid data when scraping", async () => {
     const options = {
       url: "https://nodejs.org/en/blog/",
-      proxy: "https://api.allorigins.win/get?url=", // example open source proxy for bypass cors error
       mainSelector: ".blog-index",
       childrenSelector: [
         { key: "date", selector: "time", type: "text" },

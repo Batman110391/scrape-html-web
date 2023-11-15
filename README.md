@@ -5,7 +5,7 @@
 Extract content from a static HTML website.
 
 > ESM, CJS
-> Node >=12
+> Node >=16
 
 _When you install Scrape HTML Web, no version of Chromium will be downloaded, unlike, for example, Puppeteer.
 This makes it a fast and light library._
@@ -17,7 +17,7 @@ _The library is asynchronous._
 **Note:**
 _two dependencies are included in order to work:_
 
-- [axios](https://www.npmjs.com/package/axios/v/1.5.1) - retrieve the web page
+- [axios](https://www.npmjs.com/package/axios/v/1.6.1) - retrieve the web page
 - [cheerio](https://www.npmjs.com/package/cheerio/v/1.0.0-rc.12) - manage content scraping based you have formatted selectors
 
 ## Installation
@@ -33,7 +33,9 @@ yarn add scrape-html-web
 ## Usage
 
 ```javascript
-import scrapeHtmlWeb from "scrape-html-web";
+import { scrapeHtmlWeb } from "scrape-html-web";
+//or
+const { scrapeHtmlWeb } = require("scrape-html-web");
 
 //example
 const options = {
@@ -86,7 +88,7 @@ const options = {
 ## options
 
 - [url](#url) - urls to scraper site web _required_
-- [proxy] - proxy url for bypass cors error in esm (React, js)
+- [bypassCors](#bypassCors) - Url to bypass cors errors in ESM
 - [mainSelector](#mainselector) - indicates the main selector where to start scraping _required_
 - [list](#list) - indicates that we need to iterate through a list of elements containing **mainSelector**, default is **True** _not required_
 - [childrenSelector](#childrenselector) - is an array made up of parameters to define the object we expect to receive _required_
@@ -99,6 +101,35 @@ const options = {
   ...
 };
 ```
+
+#### bypassCors
+
+```javascript
+const options = {
+  bypassCors: {
+    customURI: "https://api.allorigins.win/get?url=",
+    paramExstract: "contents",
+  }, // bypass cors error in ESM
+  ...
+};
+```
+
+```javascript
+const options = {
+  bypassCors: true,
+  ...
+};
+```
+
+You can use the default URL or use a custom one.
+
+1. If you pass a Boolean without specifying anything, the default URL will be used, which is the following: https://api.allorigins.win/get?url=
+
+2. it is also possible to pass a custom URL indicating the following parameters:
+
+   \- **customURI:** Custom URL \*\* _*required*_
+
+   \- **paramExstract:** Any extraction parameter deriving from the call \*\* *\_*not required*\_*
 
 #### mainSelector
 
@@ -150,9 +181,13 @@ const options = {
 ```
 
 - **key:** is the name of the key \*\* _required_
+
 - **selector:** is the name of the selector that is searched for in the HTML that is contained by the parent \*\* _required_
+
 - **attr:** indicates what kind of attribute you want to get \*\* _not required_
+
   > Some of the more common attributes are − [ className, tagName, id, href, title, rel, src, style ]
+
 - **type:** indicates the type of value to be obtained \*\* _not required_ (Default: "Text")
 
   > possible values: [ **text** , **html** ]
@@ -163,6 +198,7 @@ const options = {
   It is possible to provide it with either a RegExp or a custom function \*\* _not required_
 
 - canBeEmpty: - by default it is set to **false** ( grants the ability to leave the value of an element blank ) \*\* _not required_
+
   > { key: "title", selector: ".title", type: "text", canBeEmpty: true }, Example response: {title: ''} if text in selector is empty
 
 ##### replace
@@ -201,9 +237,6 @@ const options = {
 
   console.log("example 2 :", data);
 })();
-```
-
-```javascript
 //Example response
 
 [

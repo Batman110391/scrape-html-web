@@ -1,5 +1,5 @@
+import * as cheerio from "cheerio";
 import axios from "axios";
-import cheerio from "cheerio";
 
 type ChildSelector = {
   key: string;
@@ -10,40 +10,104 @@ type ChildSelector = {
   replace?: RegExp | ((text: string) => string);
 };
 
+type ByPassCors = {
+  customURI?: string;
+  paramExstract?: string;
+};
+
 type Options = {
   url: string;
   mainSelector: string;
   childrenSelector: ChildSelector[];
-  proxy?: string;
+  bypassCors?: boolean | ByPassCors;
   list?: boolean;
 };
+
+function buildDefineURI(
+  url: string,
+  bypassCors?: boolean | ByPassCors
+): string {
+  if (bypassCors) {
+    if (typeof bypassCors === "boolean") {
+      return bypassCors
+        ? `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`
+        : url;
+    } else {
+      const { customURI } = bypassCors;
+      return customURI
+        ? `${customURI}${encodeURIComponent(url)}`
+        : `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+    }
+  } else {
+    return url;
+  }
+}
+
+function buildbodyHTML(
+  response: { data: any },
+  bypassCors?: boolean | ByPassCors
+): string {
+  if (bypassCors) {
+    if (typeof bypassCors === "boolean") {
+      return response.data.contents;
+    } else {
+      const { paramExstract } = bypassCors;
+
+      return paramExstract ? response.data[paramExstract] : response.data;
+    }
+  } else {
+    return response.data;
+  }
+}
 
 export async function scrapeHtmlWeb(options: Options) {
   let result: any[] = [];
 
-  const { url, mainSelector, childrenSelector, list, proxy } = options || {};
+  const { url, mainSelector, childrenSelector, list, bypassCors } =
+    options || {};
 
-  const proxyURI = proxy ? proxy : "";
+  const defineURI = buildDefineURI(url, bypassCors);
 
-  await axios(`${proxyURI}${encodeURIComponent(url)}`)
-    .then((response) => {
-      const html_data = response.data.contents;
+  try {
+    // Use axios for HTTP requests
+    const response = await axios.get(defineURI);
 
-      const $ = cheerio.load(html_data);
+    const bodyHTML = buildbodyHTML(response, bypassCors);
 
-      $(mainSelector)
-        .children()
-        .each((_, parentElem) => {
-          let obj: any = {};
+    const $ = cheerio.load(bodyHTML);
 
-          childrenSelector.forEach((el) => {
-            const { key, selector, attr, type, canBeEmpty, replace } = el;
+    $(mainSelector)
+      .children()
+      .each((_, parentElem) => {
+        let obj: any = {};
 
-            const value = $(parentElem).find(selector).length
-              ? $(parentElem).find(selector)
-              : $(parentElem);
+        childrenSelector.forEach((el) => {
+          const { key, selector, attr, type, canBeEmpty, replace } = el;
 
-            if (!attr && !type) {
+          const value = $(parentElem).find(selector).length
+            ? $(parentElem).find(selector)
+            : $(parentElem);
+
+          if (!attr && !type) {
+            let text = value.text().trim();
+
+            if (replace) {
+              if (replace instanceof RegExp) {
+                text = text.replace(replace, "");
+              } else if (typeof replace === "function") {
+                text = replace(text);
+              }
+            }
+
+            obj = { ...obj, [key]: text };
+          }
+
+          if (attr && attr !== "") {
+            if (value.attr(attr) || canBeEmpty) {
+              obj = { ...obj, [key]: value.attr(attr) };
+            }
+          } else if (type === "text") {
+            if (value.text().trim() || canBeEmpty) {
               let text = value.text().trim();
 
               if (replace) {
@@ -56,58 +120,39 @@ export async function scrapeHtmlWeb(options: Options) {
 
               obj = { ...obj, [key]: text };
             }
+          } else if (type === "html") {
+            if (value.prop("outerHTML") || canBeEmpty) {
+              let html = value.prop("outerHTML");
 
-            if (attr && attr !== "") {
-              if (value.attr(attr) || canBeEmpty) {
-                obj = { ...obj, [key]: value.attr(attr) };
-              }
-            } else if (type === "text") {
-              if (value.text().trim() || canBeEmpty) {
-                let text = value.text().trim();
-
-                if (replace) {
-                  if (replace instanceof RegExp) {
-                    text = text.replace(replace, "");
-                  } else if (typeof replace === "function") {
-                    text = replace(text);
+              if (replace) {
+                if (replace instanceof RegExp) {
+                  if (html) {
+                    html = html.replace(replace, "");
+                  }
+                } else if (typeof replace === "function") {
+                  if (html) {
+                    html = replace(html);
                   }
                 }
-
-                obj = { ...obj, [key]: text };
               }
-            } else if (type === "html") {
-              if (value.prop("outerHTML") || canBeEmpty) {
-                let html = value.prop("outerHTML");
 
-                if (replace) {
-                  if (replace instanceof RegExp) {
-                    if (html) {
-                      html = html.replace(replace, "");
-                    }
-                  } else if (typeof replace === "function") {
-                    if (html) {
-                      html = replace(html);
-                    }
-                  }
-                }
-
-                obj = { ...obj, [key]: html };
-              }
+              obj = { ...obj, [key]: html };
             }
-          });
-
-          if (Object.keys(obj).length) {
-            result.push(obj);
-          }
-
-          if (list === false) {
-            return false;
           }
         });
-    })
-    .catch((err) => {
-      throw new Error(err);
-    });
+
+        if (Object.keys(obj).length) {
+          result.push(obj);
+        }
+
+        if (!list) {
+          return false;
+        }
+      });
+  } catch (err) {
+    console.error("Error during request:", err);
+    throw err;
+  }
 
   return result;
 }
