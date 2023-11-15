@@ -40,7 +40,7 @@ const { scrapeHtmlWeb } = require("scrape-html-web");
 //example
 const options = {
   url: "https://nodejs.org/en/blog/",
-  bypassCors: true // avoids running errors in esm
+  bypassCors: true, // avoids running errors in esm
   mainSelector: ".blog-index",
   childrenSelector: [
     { key: "date", selector: "time", type: "text" },
