@@ -40,7 +40,7 @@ const { scrapeHtmlWeb } = require("scrape-html-web");
 //example
 const options = {
   url: "https://nodejs.org/en/blog/",
-  proxy: "https://api.allorigins.win/get?url=", // open source proxy, bypass cors error
+  bypassCors: true // avoids running errors in esm
   mainSelector: ".blog-index",
   childrenSelector: [
     { key: "date", selector: "time", type: "text" },
@@ -112,9 +112,6 @@ const options = {
   }, // bypass cors error in ESM
   ...
 };
-```
-
-```javascript
 const options = {
   bypassCors: true,
   ...
